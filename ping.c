@@ -1,3 +1,6 @@
+#undef NORMAL
+#define EMBED
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <linux/if_packet.h>
@@ -70,7 +73,13 @@ in_cksum(const unsigned short *addr, register int len, unsigned short csum)
 	return (answer);
 }
 
-int main(int argc, char **argv) {
+#ifdef NORMAL
+    int main(int argc, char **argv) {
+#endif
+
+#ifdef EMBED
+    void ping(const char* argv) {
+#endif
     int sock, alen;
     struct sockaddr_in source = { .sin_family = AF_INET };
     struct sockaddr_in dst;
@@ -81,11 +90,22 @@ int main(int argc, char **argv) {
      */
     memset((char *)&dst, 0, sizeof(dst));
     dst.sin_family = AF_INET;
-    /* arv[1] is supposed to be an IP address */
-    if (inet_aton(argv[1], &dst.sin_addr) == 0) {
-        fprintf(stderr, "The first argument must be an IP address\n");
-        exit(1);
-    }
+
+    #ifdef NORMAL
+        /* arv[1] is supposed to be an IP address */
+        if (inet_aton(argv[1], &dst.sin_addr) == 0) {
+            fprintf(stderr, "The first argument must be an IP address\n");
+            exit(1);
+        }
+    #endif
+
+    #ifdef EMBED
+        if (inet_aton(argv, &dst.sin_addr) == 0) {
+            fprintf(stderr, "The first argument must be an IP address\n");
+            exit(1);
+        }      
+    #endif
+
     dst.sin_port = htons(1025);
     // Create a socket
     sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
@@ -194,5 +214,8 @@ int main(int argc, char **argv) {
     } else {
         printf("Not a ICMP_ECHOREPLY\n");
     }
-    return 0;
+
+    #ifdef NORMAL
+        return 0;
+    #endif
 }
